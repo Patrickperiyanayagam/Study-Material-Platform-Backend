@@ -68,10 +68,27 @@ class FlashCardResponse(BaseModel):
     cards: List[FlashCard]
     total_cards: int
 
+class SummaryRequest(BaseModel):
+    length: str = Field(default="medium", pattern="^(short|medium|long)$")
+    type: str = Field(default="overview", pattern="^(overview|key_points|detailed|bullet_points)$")
+    topics: Optional[List[str]] = None
+    model_configuration: Optional[ModelConfig] = None
+
+class SummaryResponse(BaseModel):
+    content: str = Field(..., description="The generated summary content")
+    length: str
+    type: str
+    topics: Optional[List[str]] = None
+    word_count: int
+    reading_time: int = Field(..., description="Estimated reading time in minutes")
+    sources_used: int = Field(..., description="Number of source documents used")
+    confidence_score: str = Field(..., description="Confidence score as percentage")
+
 class ConfigRequest(BaseModel):
     chat_model: ModelConfig
     quiz_model: ModelConfig
     flashcard_model: ModelConfig
+    summary_model: ModelConfig
 
 class ConfigResponse(BaseModel):
     message: str

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import upload, chat, quiz, flashcards, config
+from app.api import upload, chat, quiz, flashcards, summary, config
 from app.services.persistent_langgraph_chat_service import get_chat_service
 import os
 from dotenv import load_dotenv
@@ -42,6 +42,7 @@ app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(quiz.router, prefix="/api/quiz", tags=["quiz"])
 app.include_router(flashcards.router, prefix="/api/flashcards", tags=["flashcards"])
+app.include_router(summary.router, prefix="/api/summary", tags=["summary"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 
 @app.get("/")

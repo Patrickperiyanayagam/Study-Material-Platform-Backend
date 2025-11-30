@@ -40,6 +40,12 @@ class ConfigService:
                 "model_name": "llama3.2",
                 "temperature": 0.7,
                 "base_url": ollama_base_url
+            },
+            "summary_model": {
+                "provider": "ollama",
+                "model_name": "llama3.2",
+                "temperature": 0.4,
+                "base_url": ollama_base_url
             }
         }
         
@@ -70,7 +76,8 @@ class ConfigService:
         self, 
         chat_model: ModelConfig, 
         quiz_model: ModelConfig, 
-        flashcard_model: ModelConfig
+        flashcard_model: ModelConfig,
+        summary_model: ModelConfig
     ):
         """Update the model configuration and rebuild the processing pipeline."""
         try:
@@ -96,6 +103,13 @@ class ConfigService:
                     "temperature": flashcard_model.temperature,
                     "base_url": flashcard_model.base_url,
                     "max_tokens": flashcard_model.max_tokens
+                },
+                "summary_model": {
+                    "provider": summary_model.provider.value,
+                    "model_name": summary_model.model_name,
+                    "temperature": summary_model.temperature,
+                    "base_url": summary_model.base_url,
+                    "max_tokens": summary_model.max_tokens
                 }
             }
             
@@ -160,6 +174,20 @@ class ConfigService:
                     api_key=api_key,
                     max_tokens=config.get("max_tokens")
                 )
+            
+            # Update summary service
+            if self.summary_service:
+                config = self.current_config["summary_model"]
+                api_key = self._get_api_key_for_provider(config["provider"])
+                model_config = {
+                    "provider": config["provider"],
+                    "model_name": config["model_name"],
+                    "temperature": config["temperature"],
+                    "base_url": config.get("base_url"),
+                    "api_key": api_key,
+                    "max_tokens": config.get("max_tokens")
+                }
+                self.summary_service.update_model_config(model_config)
                 
         except Exception as e:
             # Log the error but don't fail the configuration update
@@ -183,7 +211,8 @@ class ConfigService:
         self, 
         chat_service = None,
         quiz_service = None, 
-        flashcard_service = None
+        flashcard_service = None,
+        summary_service = None
     ):
         """Set references to services for model updates."""
         if chat_service:
@@ -192,6 +221,8 @@ class ConfigService:
             self.quiz_service = quiz_service
         if flashcard_service:
             self.flashcard_service = flashcard_service
+        if summary_service:
+            self.summary_service = summary_service
     
     def get_provider_config(self, provider: str) -> Dict[str, Any]:
         """Get configuration for a specific provider."""
@@ -210,7 +241,7 @@ class ConfigService:
             "openrouter": {
                 "requires_api_key": True,
                 "supports_base_url": False,
-"default_models": ["deepseek/deepseek-chat-v3.1:free", "qwen/qwen3-coder:free", "mistralai/mistral-small-3.2-24b-instruct:free", "meta-llama/llama-3.3-8b-instruct:free", "qwen/qwen3-235b-a22b:free", "deepseek/deepseek-r1-distill-llama-70b:free"]
+"default_models": ["qwen/qwen3-235b-a22b:free", "mistralai/mistral-small-3.1-24b-instruct:free", "google/gemma-3-12b-it:free", "google/gemma-3-27b-it:free", "meta-llama/llama-3.3-70b-instruct:free", "mistralai/mistral-7b-instruct:free"]
             },
             "openai": {
                 "requires_api_key": True,
