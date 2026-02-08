@@ -5,7 +5,7 @@ import uuid
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain_community.document_loaders import UnstructuredWordDocumentLoader
+from langchain_community.document_loaders import UnstructuredWordDocumentLoader, UnstructuredPowerPointLoader
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 # Environment variables accessed directly
@@ -95,6 +95,8 @@ class DocumentProcessor:
                 loader = TextLoader(file_path, encoding='utf-8')
             elif file_extension in ['.docx', '.doc']:
                 loader = UnstructuredWordDocumentLoader(file_path)
+            elif file_extension in ['.pptx', '.ppt']:
+                loader = UnstructuredPowerPointLoader(file_path)
             else:
                 raise ValueError(f"Unsupported file type: {file_extension}")
             
@@ -106,30 +108,53 @@ class DocumentProcessor:
             raise Exception(f"Failed to load document {original_filename}: {str(e)}")
     
     async def search_documents(self, query: str, k: int = 5) -> List[Dict]:
-        """Search for similar documents."""
+        """Perform semantic search for relevant documents."""
         try:
             if not self.vector_store:
                 return []
             
-            # Perform similarity search
+            # Perform enhanced semantic search with relevance scoring
+            # Using similarity_search_with_relevance_scores for better semantic understanding
+            results = await asyncio.to_thread(
+                self.vector_store.similarity_search_with_relevance_scores,
+                query, k=k, score_threshold=0.1  # Filter out very low relevance results
+            )
+            
+            # Format results with semantic relevance scores
+            formatted_results = []
+            for doc, relevance_score in results:
+                formatted_results.append({
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                    "relevance_score": relevance_score,  # Higher score = more relevant
+                    "semantic_similarity": 1.0 - relevance_score  # For backward compatibility
+                })
+            
+            return formatted_results
+            
+        except AttributeError:
+            # Fallback to standard similarity search if relevance_scores not available
+            print("⚠️ Relevance scores not available, falling back to similarity search")
             results = await asyncio.to_thread(
                 self.vector_store.similarity_search_with_score,
                 query, k=k
             )
             
-            # Format results
             formatted_results = []
-            for doc, score in results:
+            for doc, distance_score in results:
+                # Convert distance to relevance (lower distance = higher relevance)
+                relevance_score = max(0.0, 1.0 - distance_score)
                 formatted_results.append({
                     "content": doc.page_content,
                     "metadata": doc.metadata,
-                    "similarity_score": score
+                    "relevance_score": relevance_score,
+                    "semantic_similarity": distance_score
                 })
             
             return formatted_results
             
         except Exception as e:
-            raise Exception(f"Document search failed: {str(e)}")
+            raise Exception(f"Semantic document search failed: {str(e)}")
     
     async def get_all_sources(self) -> List[str]:
         """Get list of all document sources in the vector store."""

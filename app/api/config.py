@@ -22,12 +22,16 @@ async def update_model_config(
         print(f"   Chat Model: {request.chat_model.provider.value} - {request.chat_model.model_name}")
         print(f"   Quiz Model: {request.quiz_model.provider.value} - {request.quiz_model.model_name}")
         print(f"   Flashcard Model: {request.flashcard_model.provider.value} - {request.flashcard_model.model_name}")
+        print(f"   Summary Model: {request.summary_model.provider.value} - {request.summary_model.model_name}")
+        print(f"   Test Model: {request.test_model.provider.value} - {request.test_model.model_name}")
         
         print("⚡ Updating configuration...")
         await config_service.update_configuration(
             chat_model=request.chat_model,
             quiz_model=request.quiz_model,
-            flashcard_model=request.flashcard_model
+            flashcard_model=request.flashcard_model,
+            summary_model=request.summary_model,
+            test_model=request.test_model
         )
         
         print("🔄 Updating all services...")
@@ -110,12 +114,12 @@ async def get_available_providers():
             display_name="OpenRouter",
             requires_api_key=True,
             models=[
-                ProviderModel(name="deepseek/deepseek-chat-v3.1:free", display_name="DeepSeek Chat v3.1 (Free)"),
-                ProviderModel(name="qwen/qwen3-coder:free", display_name="Qwen 3 Coder (Free)"),
-                ProviderModel(name="mistralai/mistral-small-3.2-24b-instruct:free", display_name="Mistral Small 3.2 24B (Free)"),
-                ProviderModel(name="meta-llama/llama-3.3-8b-instruct:free", display_name="Llama 3.3 8B Instruct (Free)"),
                 ProviderModel(name="qwen/qwen3-235b-a22b:free", display_name="Qwen 3 235B A22B (Free)"),
-                ProviderModel(name="deepseek/deepseek-r1-distill-llama-70b:free", display_name="DeepSeek R1 Distill Llama 70B (Free)")
+                ProviderModel(name="mistralai/mistral-small-3.1-24b-instruct:free", display_name="Mistral Small 3.1 24B (Free)"),
+                ProviderModel(name="google/gemma-3-12b-it:free", display_name="Google Gemma 3 12B IT (Free)"),
+                ProviderModel(name="google/gemma-3-27b-it:free", display_name="Google Gemma 3 27B IT (Free)"),
+                ProviderModel(name="meta-llama/llama-3.3-70b-instruct:free", display_name="Llama 3.3 70B Instruct (Free)"),
+                ProviderModel(name="mistralai/mistral-7b-instruct:free", display_name="Mistral 7B Instruct (Free)")
             ]
         ),
         ProviderInfo(

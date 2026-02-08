@@ -11,10 +11,14 @@ The backend is built using a modern, scalable architecture with clear separation
 │                    FastAPI Application                     │
 ├─────────────────────────────────────────────────────────────┤
 │                      API Layer                             │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌──────┐  │
-│  │ Upload  │ │  Chat   │ │  Quiz   │ │Flashcard│ │Config│  │
-│  │   API   │ │   API   │ │   API   │ │   API   │ │ API  │  │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └──────┘  │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌──────┐  │
+│  │ Upload  │ │  Chat   │ │  Quiz   │ │Flashcard│ │ Summary │ │Config│  │
+│  │   API   │ │   API   │ │   API   │ │   API   │ │   API   │ │ API  │  │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └──────┘  │
+│  ┌─────────┐                                                           │
+│  │  Test   │                                                           │
+│  │   API   │                                                           │
+│  └─────────┘                                                           │
 ├─────────────────────────────────────────────────────────────┤
 │                    Service Layer                           │
 │  ┌─────────────────────────────────────────────────────────┐ │
@@ -81,8 +85,9 @@ Text Chunking → Embedding Generation → Vector Storage
 ```
 
 **Supported Formats:**
-- **PDF**: pypdf2 for text extraction
-- **DOC/DOCX**: python-docx for Word documents  
+- **PDF**: PyPDFLoader for text extraction
+- **DOC/DOCX**: UnstructuredWordDocumentLoader for Word documents  
+- **PPT/PPTX**: UnstructuredPowerPointLoader for PowerPoint presentations
 - **TXT**: Direct text processing
 - **Size Limit**: 50MB per file
 
@@ -96,6 +101,7 @@ Text Chunking → Embedding Generation → Vector Storage
 - **Model**: mxbai-embed-large:335m (via Ollama)
 - **Dimensions**: 335 dimensions
 - **Storage**: ChromaDB with automatic persistence
+- **Search**: Semantic search with relevance scoring
 
 ### 3. Model Factory System
 
@@ -107,7 +113,7 @@ Text Chunking → Embedding Generation → Vector Storage
 |----------|--------|----------|
 | **Ollama** | llama3.1:8b, mistral, etc. | Local processing, privacy |
 | **Groq** | llama3-70b, mixtral-8x7b | High-speed inference |
-| **OpenRouter** | Multiple models | Model diversity |
+| **OpenRouter** | qwen3-235b, mistral-small-3.1, gemma-3, llama-3.3-70b | Model diversity |
 | **Google Gemini** | gemini-pro, gemini-flash | Latest Google AI |
 | **OpenAI** | gpt-4, gpt-3.5-turbo | Industry standard |
 
@@ -121,6 +127,81 @@ Text Chunking → Embedding Generation → Vector Storage
     "max_tokens": 4096
 }
 ```
+
+### 4. Summary Service
+
+**Location**: `app/services/summary_service.py`
+
+**Summary Types:**
+- **Overview**: General summary covering main themes and concepts
+- **Key Points**: Focus on most important points and takeaways
+- **Detailed**: Comprehensive analysis with supporting details
+- **Bullet Points**: Structured list format with clear organization
+
+**Length Options:**
+- **Short**: 1-2 paragraphs (150-300 words)
+- **Medium**: 3-5 paragraphs (300-600 words)
+- **Long**: Detailed analysis (600+ words)
+
+**Features:**
+- **Document-level Summarization**: Generate summaries from all uploaded content
+- **Topic-specific Summaries**: Focus on selected documents or topics
+- **Semantic Content Analysis**: Intelligent content grouping and organization
+- **Metadata Generation**: Word count, reading time, confidence scoring
+- **Export Functionality**: Download summaries as text files
+- **Clean Markdown Output**: Well-formatted responses with proper headers and bullet points
+
+### 5. Test Service - Auto-Exam & AI Grading
+
+**Location**: `app/services/test_service.py`
+
+**Core Functionality:**
+- **Test Generation**: Creates syllabus-aligned tests from uploaded documents with configurable question types
+- **Question Configuration**: Supports different mark distributions (2/4/8-mark questions) with customizable difficulty levels
+- **AI Grading**: Evaluates student answers against comprehensive rubrics with detailed feedback
+- **Performance Analysis**: Provides per-question scoring, overall performance metrics, and targeted improvement guidance
+
+**Technical Implementation:**
+```python
+class TestService:
+    def __init__(self):
+        self.vector_store = ChromaService()
+    
+    async def generate_test(self, num_questions: int, difficulty: str, 
+                           mark_distribution: dict, model_config: dict) -> TestResponse:
+        # Generate contextual test questions using vector DB and AI
+        
+    async def grade_test_answers(self, questions: List[TestQuestion], 
+                               answers: List[str], model_config: dict) -> GradingResponse:
+        # AI-powered grading with rubric-based evaluation
+```
+
+**Key Features:**
+- **Contextual Generation**: Uses vector database retrieval for relevant content-based questions
+- **Rubric-Based Grading**: Comprehensive evaluation criteria for objective and consistent scoring
+- **Detailed Feedback**: Per-question analysis with strengths, weaknesses, and improvement suggestions
+- **Study Plan Generation**: AI-generated personalized study recommendations based on performance
+- **Multi-Model Support**: Compatible with all configured AI providers (Ollama, Groq, OpenRouter, etc.)
+
+**API Endpoints:**
+- `POST /api/test/generate` - Generate new test with custom parameters
+- `POST /api/test/grade` - Grade submitted test answers with AI evaluation
+
+### 6. Enhanced Response Formatting
+
+**Location**: All chat and summary services
+
+**Markdown Support Features:**
+- **Source Citation**: Source filenames are displayed in bold formatting (e.g., **filename.pdf**)
+- **Clean Markdown**: Responses use proper Markdown formatting with headers (##, ###), bullet points (-), and emphasis (**bold**)
+- **Semantic Search**: Enhanced similarity search with relevance scoring for better content retrieval
+- **Professional Layout**: Structured responses with logical flow and clear organization
+
+**Response Enhancement:**
+- Chat responses include bold source references for easy identification
+- Summary responses use clean Markdown structure with proper sections
+- No document numbering - only clean filename references
+- Improved readability with consistent formatting standards
 
 ## 📡 API Endpoints
 
@@ -229,6 +310,107 @@ Text Chunking → Embedding Generation → Vector Storage
 }
 ```
 
+### Test Generation & Grading (`/api/test/`)
+
+| Method | Endpoint | Description | Request Body |
+|--------|----------|-------------|--------------|
+| POST | `/generate` | Generate syllabus-aligned test | `TestRequest` |
+| POST | `/grade` | Grade test answers with AI | `GradingRequest` |
+
+**Test Generation Request/Response:**
+```json
+// Request
+{
+    "num_questions": 5,
+    "difficulty": "medium",
+    "mark_distribution": {"2": 2, "4": 2, "8": 1},
+    "topics": ["machine learning", "data structures"],
+    "model_configuration": {
+        "provider": "groq",
+        "model_name": "llama-3.3-70b-versatile",
+        "temperature": 0.7
+    }
+}
+
+// Response
+{
+    "questions": [
+        {
+            "question": "Explain the concept of supervised learning...",
+            "marks": 4,
+            "rubric": "Clear definition (2 marks), Examples (1 mark), Applications (1 mark)"
+        }
+    ],
+    "total_questions": 5,
+    "total_marks": 20,
+    "difficulty": "medium"
+}
+```
+
+**Test Grading Request/Response:**
+```json
+// Request
+{
+    "questions": [...],
+    "answers": ["Supervised learning is...", "Data structures are..."],
+    "model_configuration": {...}
+}
+
+// Response
+{
+    "question_grades": [
+        {
+            "question_number": 1,
+            "marks_awarded": 3.5,
+            "total_marks": 4,
+            "feedback": "Good understanding but missing examples",
+            "strengths": ["Clear definition", "Accurate concepts"],
+            "improvements": ["Include practical examples"]
+        }
+    ],
+    "total_score": 17.5,
+    "total_possible": 20,
+    "percentage": 87.5,
+    "overall_feedback": "Strong performance with room for improvement in examples",
+    "study_plan": "Focus on practical applications and real-world examples"
+}
+```
+
+### Summary Generation (`/api/summary/`)
+
+| Method | Endpoint | Description | Request Body |
+|--------|----------|-------------|--------------|
+| POST | `/generate` | Generate document summary | `SummaryRequest` |
+| GET | `/topics` | Get available topics | None |
+| GET | `/status` | Summary service status | None |
+
+**Summary Request/Response:**
+```json
+// Request
+{
+    "length": "medium",
+    "type": "overview",
+    "topics": ["document1.pdf", "document2.txt"],
+    "model_configuration": {
+        "provider": "ollama",
+        "model_name": "llama3.1:8b",
+        "temperature": 0.7
+    }
+}
+
+// Response
+{
+    "content": "This summary provides an overview of...",
+    "length": "medium",
+    "type": "overview", 
+    "topics": ["document1.pdf", "document2.txt"],
+    "word_count": 450,
+    "reading_time": 2,
+    "sources_used": 5,
+    "confidence_score": "85%"
+}
+```
+
 ### Configuration (`/api/config/`)
 
 | Method | Endpoint | Description | Request Body |
@@ -270,6 +452,22 @@ class FlashCardRequest(BaseModel):
     num_cards: int = 10
     topic: Optional[str] = None
     model_configuration: Optional[ModelConfig] = None
+
+class SummaryRequest(BaseModel):
+    length: str = "medium"  # short, medium, long
+    type: str = "overview"  # overview, key_points, detailed, bullet_points
+    topics: Optional[List[str]] = None
+    model_configuration: Optional[ModelConfig] = None
+
+class SummaryResponse(BaseModel):
+    content: str
+    length: str
+    type: str
+    topics: Optional[List[str]] = None
+    word_count: int
+    reading_time: int
+    sources_used: int
+    confidence_score: str
 ```
 
 ## 🚀 Getting Started

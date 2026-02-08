@@ -46,7 +46,7 @@ Use the following context to answer the user's question. If the question cannot 
 Context:
 {context}
 
-Provide accurate, helpful responses based on the context. If you reference specific information, mention which document it came from when possible. Answer directly without showing your thought process."""),
+Provide accurate, helpful responses based on the context. When referencing specific information, cite the source filename using bold formatting (e.g., "according to **filename.pptx**" or "from **filename.pdf**"). Do not use document numbers. Use proper markdown formatting in your responses. Answer directly without showing your thought process."""),
             MessagesPlaceholder("chat_history"),
             ("human", "{input}")
         ])

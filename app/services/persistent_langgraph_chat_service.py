@@ -84,7 +84,7 @@ Use the following context to answer the user's question. If the question cannot 
 Context:
 {context}
 
-Provide accurate, helpful responses based on the context and conversation history. If you reference specific information, mention which document it came from when possible."""),
+Provide accurate, helpful responses based on the context and conversation history. When referencing specific information, cite the source filename using bold formatting (e.g., "according to **filename.pptx**" or "from **filename.pdf**"). Do not use document numbers. Use proper markdown formatting in your responses."""),
             MessagesPlaceholder("messages"),
         ])
         print("✅ Prompt initialized with strict no-thinking instructions")
@@ -347,10 +347,10 @@ Provide accurate, helpful responses based on the context and conversation histor
             return "No relevant documents found."
         
         context_parts = []
-        for i, doc in enumerate(relevant_docs):
+        for doc in relevant_docs:
             source = doc["metadata"].get("source", "Unknown")
             content = doc["content"]
-            context_parts.append(f"Document {i+1} from {source}:\n{content}\n")
+            context_parts.append(f"From {source}:\n{content}\n")
         
         return "\n".join(context_parts)
     
