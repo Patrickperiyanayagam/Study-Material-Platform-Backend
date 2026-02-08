@@ -17,6 +17,7 @@ class ConfigService:
         self.chat_service = None
         self.quiz_service = None
         self.flashcard_service = None
+        self.test_service = None
     
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration from file or return defaults."""
@@ -45,6 +46,12 @@ class ConfigService:
                 "provider": "ollama",
                 "model_name": "llama3.2",
                 "temperature": 0.4,
+                "base_url": ollama_base_url
+            },
+            "test_model": {
+                "provider": "ollama",
+                "model_name": "llama3.2",
+                "temperature": 0.7,
                 "base_url": ollama_base_url
             }
         }
@@ -77,7 +84,8 @@ class ConfigService:
         chat_model: ModelConfig, 
         quiz_model: ModelConfig, 
         flashcard_model: ModelConfig,
-        summary_model: ModelConfig
+        summary_model: ModelConfig,
+        test_model: ModelConfig
     ):
         """Update the model configuration and rebuild the processing pipeline."""
         try:
@@ -110,6 +118,13 @@ class ConfigService:
                     "temperature": summary_model.temperature,
                     "base_url": summary_model.base_url,
                     "max_tokens": summary_model.max_tokens
+                },
+                "test_model": {
+                    "provider": test_model.provider.value,
+                    "model_name": test_model.model_name,
+                    "temperature": test_model.temperature,
+                    "base_url": test_model.base_url,
+                    "max_tokens": test_model.max_tokens
                 }
             }
             
@@ -188,6 +203,19 @@ class ConfigService:
                     "max_tokens": config.get("max_tokens")
                 }
                 self.summary_service.update_model_config(model_config)
+            
+            # Update test service
+            if self.test_service:
+                config = self.current_config["test_model"]
+                api_key = self._get_api_key_for_provider(config["provider"])
+                self.test_service.update_model_config(
+                    provider=config["provider"],
+                    model_name=config["model_name"],
+                    temperature=config["temperature"],
+                    base_url=config.get("base_url"),
+                    api_key=api_key,
+                    max_tokens=config.get("max_tokens")
+                )
                 
         except Exception as e:
             # Log the error but don't fail the configuration update
@@ -212,7 +240,8 @@ class ConfigService:
         chat_service = None,
         quiz_service = None, 
         flashcard_service = None,
-        summary_service = None
+        summary_service = None,
+        test_service = None
     ):
         """Set references to services for model updates."""
         if chat_service:
@@ -223,6 +252,8 @@ class ConfigService:
             self.flashcard_service = flashcard_service
         if summary_service:
             self.summary_service = summary_service
+        if test_service:
+            self.test_service = test_service
     
     def get_provider_config(self, provider: str) -> Dict[str, Any]:
         """Get configuration for a specific provider."""

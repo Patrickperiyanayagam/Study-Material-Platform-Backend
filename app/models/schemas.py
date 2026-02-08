@@ -84,11 +84,62 @@ class SummaryResponse(BaseModel):
     sources_used: int = Field(..., description="Number of source documents used")
     confidence_score: str = Field(..., description="Confidence score as percentage")
 
+class TestQuestion(BaseModel):
+    question: str = Field(..., description="The test question")
+    marks: int = Field(..., ge=2, le=8, description="Marks for this question (2, 4, or 8)")
+    difficulty: str = Field(..., description="Question difficulty level")
+    topic: str = Field(..., description="Topic/subject area of the question")
+
+class TestRequest(BaseModel):
+    num_questions: int = Field(default=10, ge=1, le=20, description="Number of questions to generate")
+    difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
+    mark_distribution: Dict[int, int] = Field(
+        default={2: 5, 4: 3, 8: 2}, 
+        description="Distribution of marks: {marks: count}"
+    )
+    topics: Optional[List[str]] = None
+    model_configuration: Optional[ModelConfig] = None
+
+class TestResponse(BaseModel):
+    questions: List[TestQuestion]
+    total_questions: int
+    total_marks: int
+
+class AnswerSubmission(BaseModel):
+    question_index: int = Field(..., ge=0, description="Index of the question")
+    answer: str = Field(..., description="User's answer to the question")
+
+class GradingRequest(BaseModel):
+    questions: List[TestQuestion]
+    answers: List[AnswerSubmission]
+    model_configuration: Optional[ModelConfig] = None
+
+class QuestionGrade(BaseModel):
+    question_index: int
+    question: str
+    user_answer: str
+    marks_awarded: float = Field(..., ge=0, description="Marks awarded for this question")
+    max_marks: int = Field(..., description="Maximum marks possible for this question")
+    percentage: float = Field(..., ge=0, le=100, description="Percentage score for this question")
+    feedback: str = Field(..., description="Detailed feedback on the answer")
+    strengths: List[str] = Field(default=[], description="Strong points in the answer")
+    improvements: List[str] = Field(default=[], description="Areas for improvement")
+
+class GradingResponse(BaseModel):
+    grades: List[QuestionGrade]
+    total_marks_awarded: float
+    total_marks_possible: int
+    overall_percentage: float
+    overall_feedback: str
+    weak_topics: List[str] = Field(default=[], description="Topics that need more focus")
+    study_plan: List[str] = Field(default=[], description="Recommended study plan")
+
 class ConfigRequest(BaseModel):
     chat_model: ModelConfig
     quiz_model: ModelConfig
     flashcard_model: ModelConfig
     summary_model: ModelConfig
+    test_model: ModelConfig
 
 class ConfigResponse(BaseModel):
     message: str

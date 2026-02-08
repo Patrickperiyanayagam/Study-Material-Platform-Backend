@@ -23,13 +23,15 @@ async def update_model_config(
         print(f"   Quiz Model: {request.quiz_model.provider.value} - {request.quiz_model.model_name}")
         print(f"   Flashcard Model: {request.flashcard_model.provider.value} - {request.flashcard_model.model_name}")
         print(f"   Summary Model: {request.summary_model.provider.value} - {request.summary_model.model_name}")
+        print(f"   Test Model: {request.test_model.provider.value} - {request.test_model.model_name}")
         
         print("⚡ Updating configuration...")
         await config_service.update_configuration(
             chat_model=request.chat_model,
             quiz_model=request.quiz_model,
             flashcard_model=request.flashcard_model,
-            summary_model=request.summary_model
+            summary_model=request.summary_model,
+            test_model=request.test_model
         )
         
         print("🔄 Updating all services...")

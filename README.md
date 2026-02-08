@@ -15,6 +15,10 @@ The backend is built using a modern, scalable architecture with clear separation
 │  │ Upload  │ │  Chat   │ │  Quiz   │ │Flashcard│ │ Summary │ │Config│  │
 │  │   API   │ │   API   │ │   API   │ │   API   │ │   API   │ │ API  │  │
 │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └──────┘  │
+│  ┌─────────┐                                                           │
+│  │  Test   │                                                           │
+│  │   API   │                                                           │
+│  └─────────┘                                                           │
 ├─────────────────────────────────────────────────────────────┤
 │                    Service Layer                           │
 │  ┌─────────────────────────────────────────────────────────┐ │
@@ -147,7 +151,43 @@ Text Chunking → Embedding Generation → Vector Storage
 - **Export Functionality**: Download summaries as text files
 - **Clean Markdown Output**: Well-formatted responses with proper headers and bullet points
 
-### 5. Enhanced Response Formatting
+### 5. Test Service - Auto-Exam & AI Grading
+
+**Location**: `app/services/test_service.py`
+
+**Core Functionality:**
+- **Test Generation**: Creates syllabus-aligned tests from uploaded documents with configurable question types
+- **Question Configuration**: Supports different mark distributions (2/4/8-mark questions) with customizable difficulty levels
+- **AI Grading**: Evaluates student answers against comprehensive rubrics with detailed feedback
+- **Performance Analysis**: Provides per-question scoring, overall performance metrics, and targeted improvement guidance
+
+**Technical Implementation:**
+```python
+class TestService:
+    def __init__(self):
+        self.vector_store = ChromaService()
+    
+    async def generate_test(self, num_questions: int, difficulty: str, 
+                           mark_distribution: dict, model_config: dict) -> TestResponse:
+        # Generate contextual test questions using vector DB and AI
+        
+    async def grade_test_answers(self, questions: List[TestQuestion], 
+                               answers: List[str], model_config: dict) -> GradingResponse:
+        # AI-powered grading with rubric-based evaluation
+```
+
+**Key Features:**
+- **Contextual Generation**: Uses vector database retrieval for relevant content-based questions
+- **Rubric-Based Grading**: Comprehensive evaluation criteria for objective and consistent scoring
+- **Detailed Feedback**: Per-question analysis with strengths, weaknesses, and improvement suggestions
+- **Study Plan Generation**: AI-generated personalized study recommendations based on performance
+- **Multi-Model Support**: Compatible with all configured AI providers (Ollama, Groq, OpenRouter, etc.)
+
+**API Endpoints:**
+- `POST /api/test/generate` - Generate new test with custom parameters
+- `POST /api/test/grade` - Grade submitted test answers with AI evaluation
+
+### 6. Enhanced Response Formatting
 
 **Location**: All chat and summary services
 
@@ -267,6 +307,72 @@ Text Chunking → Embedding Generation → Vector Storage
     ],
     "total_cards": 10,
     "generated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+### Test Generation & Grading (`/api/test/`)
+
+| Method | Endpoint | Description | Request Body |
+|--------|----------|-------------|--------------|
+| POST | `/generate` | Generate syllabus-aligned test | `TestRequest` |
+| POST | `/grade` | Grade test answers with AI | `GradingRequest` |
+
+**Test Generation Request/Response:**
+```json
+// Request
+{
+    "num_questions": 5,
+    "difficulty": "medium",
+    "mark_distribution": {"2": 2, "4": 2, "8": 1},
+    "topics": ["machine learning", "data structures"],
+    "model_configuration": {
+        "provider": "groq",
+        "model_name": "llama-3.3-70b-versatile",
+        "temperature": 0.7
+    }
+}
+
+// Response
+{
+    "questions": [
+        {
+            "question": "Explain the concept of supervised learning...",
+            "marks": 4,
+            "rubric": "Clear definition (2 marks), Examples (1 mark), Applications (1 mark)"
+        }
+    ],
+    "total_questions": 5,
+    "total_marks": 20,
+    "difficulty": "medium"
+}
+```
+
+**Test Grading Request/Response:**
+```json
+// Request
+{
+    "questions": [...],
+    "answers": ["Supervised learning is...", "Data structures are..."],
+    "model_configuration": {...}
+}
+
+// Response
+{
+    "question_grades": [
+        {
+            "question_number": 1,
+            "marks_awarded": 3.5,
+            "total_marks": 4,
+            "feedback": "Good understanding but missing examples",
+            "strengths": ["Clear definition", "Accurate concepts"],
+            "improvements": ["Include practical examples"]
+        }
+    ],
+    "total_score": 17.5,
+    "total_possible": 20,
+    "percentage": 87.5,
+    "overall_feedback": "Strong performance with room for improvement in examples",
+    "study_plan": "Focus on practical applications and real-world examples"
 }
 ```
 
